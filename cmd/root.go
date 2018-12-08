@@ -22,9 +22,11 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	homedir "github.com/mitchellh/go-homedir"
@@ -103,6 +105,7 @@ var rootCmd = &cobra.Command{
 		done := make(chan bool)
 
 		go func() {
+			var last time.Time
 			for {
 				select {
 				// watch for events
@@ -118,6 +121,25 @@ var rootCmd = &cobra.Command{
 						}
 
 						fmt.Println("create|write")
+						if time.Since(last).Minutes() <= 5 {
+							return
+						}
+
+						last = time.Now()
+
+						var dest = path.Join(home, ".stellaris-insights")
+						if _, err := os.Stat(dest); os.IsNotExist(err) {
+							os.Mkdir(dest, 0700)
+						}
+
+						dest = path.Join(dest, uploadSessionId)
+						if _, err := os.Stat(dest); os.IsNotExist(err) {
+							os.Mkdir(dest, 0700)
+						}
+
+						dest = path.Join(dest, time.Now().UTC().Format(time.RFC3339Nano))
+						fmt.Println(dest)
+						copy(event.Name, dest)
 					}
 
 				// watch for errors
@@ -204,4 +226,29 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+}
+
+func copy(src, dst string) (int64, error) {
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		return 0, err
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", src)
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
 }
