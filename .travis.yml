@@ -18,12 +18,12 @@ env:
     secure: vJwMFCq9L7sGN/68h0Bor51UsfH7CB1KOl+NrSPLOSbD8ayPzMA+j4CzvxVYZFxgPRlZsbseb1NUwV/G/q4KfbBmjhCGU3oBZ65nImWyMJA3f/A0Hmp2dhkIREYSoGEXqktxRGzhf9gnPRc93S6/Fnh3NJFQHK8CbHtITIJ+GEDwJg1gf/1uK9aA9aRem4urACvo7iGCH5j99wElAbqwOQb/heeJmIFSX5MKsVOFY8KIs1F+IbDiad+uR5rIDLtw+9UAL2Hlad52RJXt3fB6Cbt79dfIxLaj2Chc6jtOu4n9s+MObaUMtHlm3ixX3hxtlDfZ2krTgsK3f3JFE0CLl0AWU51Iz3fmQtwWvBAkqEgP1PIaBzmbSFZ+V65nodJV/7qhhe53b+u43y0yPd2MUEtFbpCpQAS6++QxxMx7GxJCKwPa3YBvBl/e5qlDy0UBJavVJ6kJtRDr73PqJ0v+dP/ClRWj0b5GwOlPlhyv8q0izdpsvaBFlLGZbMBHCWEI/FpTnjJ/woJA3Ce3Ke1WR8LhuJjdixcbCsVUoxycSCQBZPzrE8JFk4yr9uHAgIPUMcPxVbm/G6qlWazK0WZPSajH5ykk+wfNHvYWKiSw3FXVGTsWSsNjTz1VUzO+fqK6xxerVHrW8MHVNkVP3P84wacoCYVeSDsRK3ixynlXr6s=
 
 before_install:
+- openssl aes-256-cbc -K $encrypted_694915995035_key -iv $encrypted_694915995035_iv
+  -in signing.gpg.enc -out signing.gpg -d
+- gpg --import signing.gpg
 - make cisetup
 
-git:
-  depth: 1
-
-install: 
+install:
 - make install
 
 script:
@@ -39,4 +39,4 @@ deploy:
     repo: stellaris-insights/uploader
     tags: true
     os: linux
-    condition: $LATEST = true
+    condition: "$LATEST = true"

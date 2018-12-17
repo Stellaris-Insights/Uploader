@@ -19,7 +19,8 @@ archive:
     amd64: x86_64
 
 sign:
-  artifacts: checksum
+  artifacts: all
+  args: ["-u", "19BDD98D4C905E242D38909899954537626AFDA0", "--output", "${signature}", "--detach-sign", "${artifact}"]
 
 checksum:
   name_template: 'checksums.txt'
