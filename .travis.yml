@@ -1,0 +1,39 @@
+language: go
+
+matrix:
+  include:
+  - go: 1.x
+    env: LATEST=true
+  - go: 1.10.x
+  - go: 1.11.x
+  - go: tip
+  allow_failures:
+  - go: tip
+
+env:
+  global:
+    secure: vJwMFCq9L7sGN/68h0Bor51UsfH7CB1KOl+NrSPLOSbD8ayPzMA+j4CzvxVYZFxgPRlZsbseb1NUwV/G/q4KfbBmjhCGU3oBZ65nImWyMJA3f/A0Hmp2dhkIREYSoGEXqktxRGzhf9gnPRc93S6/Fnh3NJFQHK8CbHtITIJ+GEDwJg1gf/1uK9aA9aRem4urACvo7iGCH5j99wElAbqwOQb/heeJmIFSX5MKsVOFY8KIs1F+IbDiad+uR5rIDLtw+9UAL2Hlad52RJXt3fB6Cbt79dfIxLaj2Chc6jtOu4n9s+MObaUMtHlm3ixX3hxtlDfZ2krTgsK3f3JFE0CLl0AWU51Iz3fmQtwWvBAkqEgP1PIaBzmbSFZ+V65nodJV/7qhhe53b+u43y0yPd2MUEtFbpCpQAS6++QxxMx7GxJCKwPa3YBvBl/e5qlDy0UBJavVJ6kJtRDr73PqJ0v+dP/ClRWj0b5GwOlPlhyv8q0izdpsvaBFlLGZbMBHCWEI/FpTnjJ/woJA3Ce3Ke1WR8LhuJjdixcbCsVUoxycSCQBZPzrE8JFk4yr9uHAgIPUMcPxVbm/G6qlWazK0WZPSajH5ykk+wfNHvYWKiSw3FXVGTsWSsNjTz1VUzO+fqK6xxerVHrW8MHVNkVP3P84wacoCYVeSDsRK3ixynlXr6s=
+
+before_install:
+- make cisetup
+
+git:
+  depth: 1
+
+install: 
+- make install
+
+script:
+- make lint
+- make test
+- make coverage
+
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: make release
+  on:
+    repo: stellaris-insights/uploader
+    tags: true
+    os: linux
+    condition: $LATEST = true

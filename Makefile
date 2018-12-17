@@ -7,6 +7,9 @@ setup:
 	go get -u github.com/golang/dep/cmd/dep
 	wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(GOPATH)/bin v1.12.3
 
+cisetup: setup
+	go get github.com/mattn/goveralls
+
 install:
 	dep ensure
 
@@ -15,6 +18,9 @@ lint:
 
 test:
 	go test -v --race ./...
+
+coverage:
+	$(GOPATH)/bin/goveralls -service=travis-ci
 
 release:
 	curl -sL http://git.io/goreleaser | bash
