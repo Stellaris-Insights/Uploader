@@ -22,17 +22,15 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"path"
-	"time"
 
-	"github.com/fsnotify/fsnotify"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/AlecAivazis/survey.v1"
+
+	"github.com/stellaris-insights/uploader/manager"
 )
 
 var home string
@@ -117,100 +115,14 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("Upload Session Secret: %#v\n", uploadSessionSecret)
 		fmt.Println("****************************************************************")
 
-		watcher, err := fsnotify.NewWatcher()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		defer watcher.Close()
-
-		done := make(chan bool)
-
-		go func() {
-			var last time.Time
-			for {
-				select {
-				// watch for events
-				case event := <-watcher.Events:
-					fmt.Printf("EVENT! %#v\n", event)
-					if event.Op&fsnotify.Create == fsnotify.Create || event.Op&fsnotify.Write == fsnotify.Write {
-						if fi, err := os.Stat(event.Name); err == nil && fi.IsDir() {
-							fmt.Println("dir")
-							if err := watcher.Add(event.Name); err != nil {
-								fmt.Println(err)
-							}
-							return
-						}
-
-						fmt.Println("create|write")
-						if time.Since(last).Minutes() <= 5 {
-							return
-						}
-
-						last = time.Now()
-
-						var dest = path.Join(home, ".stellaris-insights")
-						if _, err := os.Stat(dest); os.IsNotExist(err) {
-							if err = os.Mkdir(dest, 0700); err != nil {
-								fmt.Println("Failed to create directory")
-							}
-						}
-
-						dest = path.Join(dest, uploadSessionId)
-						if _, err := os.Stat(dest); os.IsNotExist(err) {
-							if err = os.Mkdir(dest, 0700); err != nil {
-								fmt.Println("Failed to create directory")
-							}
-						}
-
-						dest = path.Join(dest, time.Now().UTC().Format(time.RFC3339Nano))
-						fmt.Println(dest)
-						_, err = copy(event.Name, dest)
-						if err != nil {
-							fmt.Println("Failed to copy file")
-						}
-					}
-
-				// watch for errors
-				case err := <-watcher.Errors:
-					fmt.Println("ERROR: ", err)
-				}
-			}
-		}()
-
-		// fsnotify doesn't support recrusive folder watching yet...
-		// https://github.com/fsnotify/fsnotify/issues/18
-		// So we need to register every subfolder for watching
-
-		// Get all files in save games folder
-		files, err := ioutil.ReadDir(path.Join(userdataDir, "save games"))
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		dirs := []string{}
-
-		// Limit to just directories so we can watch them
-		for _, f := range files {
-			if f.IsDir() {
-				dirs = append(dirs, f.Name())
-			}
-		}
-
-		// Watch current existing directories in save games folder
-		for _, d := range dirs {
-			if err := watcher.Add(path.Join(userdataDir, "save games", d)); err != nil {
-				fmt.Println(err)
-			}
-		}
-
-		// Watch parent directory for new folder
-		if err := watcher.Add(path.Join(userdataDir, "save games")); err != nil {
-			fmt.Println(err)
-		}
-
-		<-done
+		w := manager.NewWatcher(
+			manager.NewFSNotify(),
+			manager.NewUploader(
+				uploadSessionId,
+				uploadSessionSecret,
+			),
+		)
+		w.Start(userdataDir)
 	},
 }
 
@@ -255,30 +167,4 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
-}
-
-func copy(src, dst string) (int64, error) {
-	sourceFileStat, err := os.Stat(src)
-	if err != nil {
-		return 0, err
-	}
-
-	if !sourceFileStat.Mode().IsRegular() {
-		return 0, fmt.Errorf("%s is not a regular file", src)
-	}
-
-	source, err := os.Open(src)
-	if err != nil {
-		return 0, err
-	}
-	defer source.Close()
-
-	destination, err := os.Create(dst)
-	if err != nil {
-		return 0, err
-	}
-	defer destination.Close()
-
-	nBytes, err := io.Copy(destination, source)
-	return nBytes, err
 }
