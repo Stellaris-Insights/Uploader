@@ -54,10 +54,16 @@ var rootCmd = &cobra.Command{
 
 		fmt.Println(userdataDir)
 
-		survey.AskOne(&survey.Input{
+		err := survey.AskOne(&survey.Input{
 			Message: "Stellaris Userdata path: ",
 			Default: userdataDir,
 		}, &userdataDir, survey.Required)
+
+		if err != nil {
+			fmt.Println("Failed to ask question")
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
 		viper.Set("userdata", userdataDir)
 
@@ -69,24 +75,40 @@ var rootCmd = &cobra.Command{
 
 		isContinuation := false
 
-		survey.AskOne(&survey.Confirm{
+		err = survey.AskOne(&survey.Confirm{
 			Message: "Is this a continuation of a previous upload session?",
 		}, &isContinuation, survey.Required)
+
+		if err != nil {
+			fmt.Println("Failed to ask question")
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
 		uploadSessionId := ""
 		uploadSessionSecret := ""
 
 		if isContinuation {
-			survey.AskOne(&survey.Input{
+			err = survey.AskOne(&survey.Input{
 				Message: "Upload Session Id",
 			}, &uploadSessionId, survey.Required)
 
-			survey.AskOne(&survey.Password{
+			if err != nil {
+				fmt.Println("Failed to ask question")
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			err = survey.AskOne(&survey.Password{
 				Message: "Upload Session Secret",
 			}, &uploadSessionSecret, survey.Required)
-		} else {
-			// TODO: Gen session id and session secret
-		}
+
+			if err != nil {
+				fmt.Println("Failed to ask question")
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		} // TODO: Gen session id and session secret if it is not a continuation
 
 		fmt.Println("****************************************************************")
 		fmt.Println("Starting watcher")
@@ -129,17 +151,24 @@ var rootCmd = &cobra.Command{
 
 						var dest = path.Join(home, ".stellaris-insights")
 						if _, err := os.Stat(dest); os.IsNotExist(err) {
-							os.Mkdir(dest, 0700)
+							if err = os.Mkdir(dest, 0700); err != nil {
+								fmt.Println("Failed to create directory")
+							}
 						}
 
 						dest = path.Join(dest, uploadSessionId)
 						if _, err := os.Stat(dest); os.IsNotExist(err) {
-							os.Mkdir(dest, 0700)
+							if err = os.Mkdir(dest, 0700); err != nil {
+								fmt.Println("Failed to create directory")
+							}
 						}
 
 						dest = path.Join(dest, time.Now().UTC().Format(time.RFC3339Nano))
 						fmt.Println(dest)
-						copy(event.Name, dest)
+						_, err = copy(event.Name, dest)
+						if err != nil {
+							fmt.Println("Failed to copy file")
+						}
 					}
 
 				// watch for errors
@@ -206,7 +235,7 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		var err error = nil
+		var err error
 
 		// Find home directory.
 		home, err = homedir.Dir()
@@ -249,6 +278,7 @@ func copy(src, dst string) (int64, error) {
 		return 0, err
 	}
 	defer destination.Close()
+
 	nBytes, err := io.Copy(destination, source)
 	return nBytes, err
 }
