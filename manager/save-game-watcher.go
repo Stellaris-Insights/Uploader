@@ -29,19 +29,19 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-type Watcher struct {
-	watcher iFSNotify
-	uploader iUploader
+type SaveGameWatcher struct {
+	watcher FSNotify
+	uploader Uploader
 }
 
-func NewWatcher(fsn iFSNotify, uploader iUploader) Watcher {
-	return Watcher {
+func NewSaveGameWatcher(fsn FSNotify, uploader Uploader) SaveGameWatcher {
+	return SaveGameWatcher {
 		watcher: fsn,
 		uploader: uploader,
 	}
 }
 
-func (w Watcher) Start(userdataDir string) {
+func (w SaveGameWatcher) Start(userdataDir string) {
 	var err error
 
 	if err != nil {
@@ -101,7 +101,7 @@ func (w Watcher) Start(userdataDir string) {
 	<-done
 }
 
-func (w Watcher) processEvent(event fsnotify.Event) {
+func (w SaveGameWatcher) processEvent(event fsnotify.Event) {
 	fmt.Printf("EVENT! %#v\n", event)
 	if event.Op&fsnotify.Create == fsnotify.Create || event.Op&fsnotify.Write == fsnotify.Write {
 		if fi, err := os.Stat(event.Name); err == nil && fi.IsDir() {

@@ -22,53 +22,46 @@ package manager
 
 import (
 	"fmt"
-	"os"
-
-	"github.com/fsnotify/fsnotify"
+	"time"
 )
 
-type iFSNotify interface {
-	Close() error
-	Add(string) error
-	Remove(string) error
-
-	Events() chan fsnotify.Event
-	Errors() chan error
+type Uploader interface {
+	Upload(file string) (bool, error)
 }
 
-type FSNotify struct {
-	watcher *fsnotify.Watcher
+type S3Uploader struct {
+	lastUpload time.Time
+	uploadSessionId string
+	uploadSessionSecret string
 }
 
-func NewFSNotify() FSNotify {
-	watcher, err := fsnotify.NewWatcher()
+func NewS3Uploader(uploadSessionId string, uploadSessionSecret string) S3Uploader {
+	return S3Uploader {
+		uploadSessionId: uploadSessionId,
+		uploadSessionSecret: uploadSessionSecret,
+	}
+}
+
+func (u S3Uploader) Upload(file string) (bool, error) {
+	if time.Since(u.lastUpload).Minutes() <= 5 {
+		return false, nil
+	}
+
+	u.lastUpload = time.Now()
+
+	fmt.Printf("Uploading file: %#v\n", file)
+
+	url, err := u.getUploadUrl()
 
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return false, err
 	}
 
-	return FSNotify {
-		watcher: watcher,
-	}
+	fmt.Printf("Upload url: %#v\n", url)
+
+	return true, nil
 }
 
-func (fsn FSNotify) Close() error {
-	return fsn.watcher.Close();
-}
-
-func (fsn FSNotify) Add(path string) error {
-	return fsn.watcher.Add(path);
-}
-
-func (fsn FSNotify) Remove(path string) error {
-	return fsn.watcher.Remove(path);
-}
-
-func (fsn FSNotify) Events() chan fsnotify.Event {
-	return fsn.watcher.Events;
-}
-
-func (fsn FSNotify) Errors() chan error {
-	return fsn.watcher.Errors;
+func (u S3Uploader) getUploadUrl() (string, error) {
+	return "", nil
 }

@@ -115,9 +115,9 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("Upload Session Secret: %#v\n", uploadSessionSecret)
 		fmt.Println("****************************************************************")
 
-		w := manager.NewWatcher(
-			manager.NewFSNotify(),
-			manager.NewUploader(
+		w := manager.NewSaveGameWatcher(
+			manager.NewFSNotifyWrapper(),
+			manager.NewS3Uploader(
 				uploadSessionId,
 				uploadSessionSecret,
 			),

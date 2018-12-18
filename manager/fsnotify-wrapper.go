@@ -22,46 +22,53 @@ package manager
 
 import (
 	"fmt"
-	"time"
+	"os"
+
+	"github.com/fsnotify/fsnotify"
 )
 
-type iUploader interface {
-	Upload(file string) (bool, error)
+type FSNotify interface {
+	Close() error
+	Add(string) error
+	Remove(string) error
+
+	Events() chan fsnotify.Event
+	Errors() chan error
 }
 
-type Uploader struct {
-	lastUpload time.Time
-	uploadSessionId string
-	uploadSessionSecret string
+type FSNotifyWrapper struct {
+	watcher *fsnotify.Watcher
 }
 
-func NewUploader(uploadSessionId string, uploadSessionSecret string) Uploader {
-	return Uploader {
-		uploadSessionId: uploadSessionId,
-		uploadSessionSecret: uploadSessionSecret,
-	}
-}
-
-func (u Uploader) Upload(file string) (bool, error) {
-	if time.Since(u.lastUpload).Minutes() <= 5 {
-		return false, nil
-	}
-
-	u.lastUpload = time.Now()
-
-	fmt.Printf("Uploading file: %#v\n", file)
-
-	url, err := u.getUploadUrl()
+func NewFSNotifyWrapper() FSNotifyWrapper {
+	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
-		return false, err
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	fmt.Printf("Upload url: %#v\n", url)
-
-	return true, nil
+	return FSNotifyWrapper {
+		watcher: watcher,
+	}
 }
 
-func (u Uploader) getUploadUrl() (string, error) {
-	return "", nil
+func (fsn FSNotifyWrapper) Close() error {
+	return fsn.watcher.Close();
+}
+
+func (fsn FSNotifyWrapper) Add(path string) error {
+	return fsn.watcher.Add(path);
+}
+
+func (fsn FSNotifyWrapper) Remove(path string) error {
+	return fsn.watcher.Remove(path);
+}
+
+func (fsn FSNotifyWrapper) Events() chan fsnotify.Event {
+	return fsn.watcher.Events;
+}
+
+func (fsn FSNotifyWrapper) Errors() chan error {
+	return fsn.watcher.Errors;
 }
