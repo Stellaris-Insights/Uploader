@@ -30,7 +30,7 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/AlecAivazis/survey.v1"
 
-	"github.com/stellaris-insights/uploader/manager"
+	"github.com/stellaris-insights/uploader"
 )
 
 var home string
@@ -115,9 +115,9 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("Upload Session Secret: %#v\n", uploadSessionSecret)
 		fmt.Println("****************************************************************")
 
-		w := manager.NewSaveGameWatcher(
-			manager.NewFSNotifyWrapper(),
-			manager.NewS3Uploader(
+		w := uploader.NewSaveGameWatcher(
+			uploader.NewFSNotifyWrapper(),
+			uploader.NewS3Uploader(
 				uploadSessionId,
 				uploadSessionSecret,
 			),
