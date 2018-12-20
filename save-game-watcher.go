@@ -30,14 +30,14 @@ import (
 )
 
 type SaveGameWatcher struct {
-	watcher FSNotify
+	watcher FSNotifier
 	uploader Uploader
 }
 
-func NewSaveGameWatcher(fsn FSNotify, uploader Uploader) SaveGameWatcher {
+func NewSaveGameWatcher(fsn FSNotifier, u Uploader) SaveGameWatcher {
 	return SaveGameWatcher {
-		watcher: fsn,
-		uploader: uploader,
+		fsn,
+		u,
 	}
 }
 

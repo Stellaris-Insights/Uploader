@@ -27,7 +27,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-type FSNotify interface {
+type FSNotifier interface {
 	Close() error
 	Add(string) error
 	Remove(string) error
@@ -36,11 +36,11 @@ type FSNotify interface {
 	Errors() chan error
 }
 
-type FSNotifyWrapper struct {
+type FSNotify struct {
 	watcher *fsnotify.Watcher
 }
 
-func NewFSNotifyWrapper() FSNotifyWrapper {
+func NewFSNotifyWrapper() FSNotify {
 	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
@@ -48,27 +48,27 @@ func NewFSNotifyWrapper() FSNotifyWrapper {
 		os.Exit(1)
 	}
 
-	return FSNotifyWrapper {
+	return FSNotify {
 		watcher: watcher,
 	}
 }
 
-func (fsn FSNotifyWrapper) Close() error {
+func (fsn FSNotify) Close() error {
 	return fsn.watcher.Close();
 }
 
-func (fsn FSNotifyWrapper) Add(path string) error {
+func (fsn FSNotify) Add(path string) error {
 	return fsn.watcher.Add(path);
 }
 
-func (fsn FSNotifyWrapper) Remove(path string) error {
+func (fsn FSNotify) Remove(path string) error {
 	return fsn.watcher.Remove(path);
 }
 
-func (fsn FSNotifyWrapper) Events() chan fsnotify.Event {
+func (fsn FSNotify) Events() chan fsnotify.Event {
 	return fsn.watcher.Events;
 }
 
-func (fsn FSNotifyWrapper) Errors() chan error {
+func (fsn FSNotify) Errors() chan error {
 	return fsn.watcher.Errors;
 }
