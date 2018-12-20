@@ -17,7 +17,7 @@ lint:
 	golangci-lint run ./...
 
 test:
-	go test -v --race ./...
+	go test -v --race -cover ./api . ./cli
 
 coverage:
 	$(GOPATH)/bin/goveralls -service=travis-ci
