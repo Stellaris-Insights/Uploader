@@ -20,7 +20,7 @@
 
 package main
 
-import "github.com/stellaris-insights/uploader/ctl/cmd"
+import "github.com/stellaris-insights/uploader/cli/cmd"
 
 func main() {
 	cmd.Execute()
