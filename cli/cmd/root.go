@@ -23,6 +23,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"net/http"
 	"path"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -31,6 +32,7 @@ import (
 	"gopkg.in/AlecAivazis/survey.v1"
 
 	"github.com/stellaris-insights/uploader"
+	"github.com/stellaris-insights/uploader/api"
 )
 
 var home string
@@ -118,6 +120,7 @@ var rootCmd = &cobra.Command{
 		w := uploader.NewSaveGameWatcher(
 			uploader.NewFSNotifyWrapper(),
 			uploader.NewS3Uploader(
+				api.NewS3ApiService(&http.Client{}, "https://api.stellarisinsights.com/"),
 				uploadSessionId,
 				uploadSessionSecret,
 			),

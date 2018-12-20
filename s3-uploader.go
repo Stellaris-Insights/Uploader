@@ -21,38 +21,26 @@
 package uploader
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"time"
+
+	"github.com/stellaris-insights/uploader/api"
 )
 
-type Uploader interface {
-	Upload(file string) (bool, error)
-}
-
 type S3Uploader struct {
+	service api.S3ApiServicer
 	lastUpload time.Time
 	uploadSessionId string
 	uploadSessionSecret string
 }
 
-type GetSignedUrlForUploadRequest struct {
-	uploadSessionId string
-	uploadSessionSecret string
-}
-
-type GetSignedUrlForUploadResponse struct {
-	signedUrl string
-}
-
-func NewS3Uploader(uploadSessionId string, uploadSessionSecret string) S3Uploader {
+func NewS3Uploader(service api.S3ApiServicer, uploadSessionId string, uploadSessionSecret string) S3Uploader {
 	return S3Uploader {
-		uploadSessionId: uploadSessionId,
-		uploadSessionSecret: uploadSessionSecret,
+		service,
+		time.Now(),
+		uploadSessionId,
+		uploadSessionSecret,
 	}
 }
 
@@ -65,7 +53,7 @@ func (u S3Uploader) Upload(file string) (bool, error) {
 
 	fmt.Printf("Uploading file: %#v\n", file)
 
-	url, err := u.getUploadUrl()
+	url, err := u.service.GetSignedUploadSaveGameURL(u.uploadSessionId, u.uploadSessionSecret)
 
 	if err != nil {
 		return false, err
@@ -78,69 +66,10 @@ func (u S3Uploader) Upload(file string) (bool, error) {
 		return false, err
 	}
 
-	err = u.uploadFile(url, fileReader)
+	err = u.service.UploadSaveGame(url, fileReader)
 	if err != nil {
 		return false, err
 	}
 
 	return true, nil
-}
-
-func (u S3Uploader) getUploadUrl() (string, error) {
-	// Probally want to do something different
-	message := GetSignedUrlForUploadRequest{
-		u.uploadSessionId,
-		u.uploadSessionSecret,
-	}
-
-	b, err := json.Marshal(message)
-	if err != nil {
-		return "", err
-	}
-
-	timeout := time.Duration(5 * time.Second)
-	client := http.Client{
-		Timeout: timeout,
-	}
-
-	resp, err := client.Post(
-		"https://api.stellarisinsights.com/v1/signed-url", // maybe this should include the uploadSessionId in the url?
-		"application/json",
-		bytes.NewBuffer(b),
-	)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	var result GetSignedUrlForUploadResponse
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		return "", err
-	}
-
-	fmt.Printf("%#v", result)
-
-	return result.signedUrl, nil
-}
-
-func (u S3Uploader) uploadFile(signedUrl string, file io.Reader) (error) {
-	timeout := time.Duration(5 * time.Second)
-	client := http.Client{
-		Timeout: timeout,
-	}
-
-	req, err := http.NewRequest("PUT", signedUrl, file)
-    if err != nil {
-        return err
-	}
-
-	resp, err := client.Do(req)
-    if err != nil {
-        return err
-	}
-	
-	fmt.Printf("%#v", resp)
-
-	return nil
 }
