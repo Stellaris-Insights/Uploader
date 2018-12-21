@@ -13,3 +13,4 @@
 
 dist
 signing.gpg
+tests.coverage

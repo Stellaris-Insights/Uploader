@@ -17,10 +17,10 @@ lint:
 	golangci-lint run ./...
 
 test:
-	go test -v --race -cover ./api . ./cli/...
+	go test -v --race -cover ./api . ./cli/... -coverprofile tests.coverage
 
 coverage:
-	$(GOPATH)/bin/goveralls -service=travis-ci
+	$(GOPATH)/bin/goveralls -service=travis-ci -coverprofile=tests.coverage
 
 release:
 	curl -sL http://git.io/goreleaser | bash
