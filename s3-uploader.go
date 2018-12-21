@@ -25,6 +25,8 @@ package uploader
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/stellaris-insights/uploader/api"
@@ -35,6 +37,7 @@ type S3Uploader struct {
 	service             api.S3ApiServicer
 	uploadSessionID     string
 	uploadSessionSecret string
+	basePath            string
 	lastUpload          time.Time
 }
 
@@ -43,11 +46,13 @@ func NewS3Uploader(
 	service api.S3ApiServicer,
 	uploadSessionID string,
 	uploadSessionSecret string,
+	basePath string,
 ) S3Uploader {
 	return S3Uploader{
 		service,
 		uploadSessionID,
 		uploadSessionSecret,
+		basePath,
 		time.Now(),
 	}
 }
@@ -68,9 +73,19 @@ func (u S3Uploader) Upload(file string) (bool, error) {
 		return false, err
 	}
 
+	absFile, err := filepath.Abs(file)
+	if err != nil {
+		return false, err
+	}
+
+	if !strings.HasPrefix(file, u.basePath) {
+		return false, fmt.Errorf("wrong file path: %s is not within the current basepath of %s", file, u.basePath)
+	}
+
 	fmt.Printf("Upload url: %#v\n", url)
 
-	fileReader, err := os.Open(file)
+	/* #nosec */
+	fileReader, err := os.Open(absFile)
 	if err != nil {
 		return false, err
 	}

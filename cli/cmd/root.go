@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -62,6 +63,13 @@ var rootCmd = &cobra.Command{
 
 		if err != nil {
 			fmt.Println("Failed to ask question")
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		userdataDir, err = filepath.Abs(userdataDir)
+		if err != nil {
+			fmt.Println("Failed to find absolute path")
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -124,6 +132,7 @@ var rootCmd = &cobra.Command{
 				api.NewS3ApiService(&http.Client{}, "https://api.stellarisinsights.com/"),
 				uploadSessionID,
 				uploadSessionSecret,
+				userdataDir,
 			),
 		)
 		w.Start(userdataDir)
