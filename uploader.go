@@ -18,8 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Package uploader is used to handle save game processing
+// and upload them to Stellaris Insights
 package uploader
 
+// Uploader instances upload a given file to Stellaris Insights via Upload.
 type Uploader interface {
 	Upload(file string) (bool, error)
 }

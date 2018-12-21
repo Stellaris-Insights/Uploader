@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Package api is a package to access api endpoints for Stellaris Insights.
 package api
 
 import (
@@ -28,31 +29,42 @@ import (
 	"net/http"
 )
 
+// S3ApiServicer is an interface for managing
+// Stellars Insights S3 api endpoints
 type S3ApiServicer interface {
 	GetSignedUploadSaveGameURL(string, string) (string, error)
-	UploadSaveGame(string, io.Reader) (error)
+	UploadSaveGame(string, io.Reader) error
 }
 
+// S3ApiService is a struct that describes the base data for
+// Stellars Insights S3 api endpoints
 type S3ApiService struct {
 	client  *http.Client
 	baseURL string
 }
 
+// NewS3ApiService creates a new instance of S3ApiService
 func NewS3ApiService(client *http.Client, baseURL string) S3ApiService {
-	return S3ApiService {
+	return S3ApiService{
 		client,
 		baseURL,
 	}
 }
 
+// GetSignedUploadURLRequest is a struct for the request body
+// to get a signed upload URL for file uploads
 type GetSignedUploadURLRequest struct {
 	UploadSessionSecret string
 }
 
+// GetSignedUploadURLResponse is a struct for the response body
+// to get a signed upload URL for file uploads
 type GetSignedUploadURLResponse struct {
 	SignedURL string
 }
 
+// GetSignedUploadSaveGameURL gets a signed upload url
+// to upload a save game to S3
 func (s3as S3ApiService) GetSignedUploadSaveGameURL(
 	uploadSessionID string,
 	uploadSessionSecret string) (string, error) {
@@ -67,14 +79,19 @@ func (s3as S3ApiService) GetSignedUploadSaveGameURL(
 	}
 
 	resp, err := s3as.client.Post(
-		s3as.baseURL + "/v1/sessions/" + uploadSessionID + "/uploads/s3-signed-url",
+		s3as.baseURL+"/v1/sessions/"+uploadSessionID+"/uploads/s3-signed-url",
 		"application/json",
 		bytes.NewBuffer(b),
 	)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err = resp.Body.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 
 	var result GetSignedUploadURLResponse
 	err = json.NewDecoder(resp.Body).Decode(&result)
@@ -85,17 +102,18 @@ func (s3as S3ApiService) GetSignedUploadSaveGameURL(
 	return result.SignedURL, nil
 }
 
-func (s3as S3ApiService) UploadSaveGame(signedURL string, file io.Reader) (error) {
+// UploadSaveGame uploads a file to a signed S3 url
+func (s3as S3ApiService) UploadSaveGame(signedURL string, file io.Reader) error {
 	req, err := http.NewRequest("PUT", signedURL, file)
-    if err != nil {
-        return err
+	if err != nil {
+		return err
 	}
 
 	resp, err := s3as.client.Do(req)
-    if err != nil {
-        return err
+	if err != nil {
+		return err
 	}
-	
+
 	fmt.Printf("%#v", resp)
 
 	return nil

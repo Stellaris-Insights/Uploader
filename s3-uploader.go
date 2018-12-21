@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Package uploader is used to handle save game processing
+// and upload them to Stellaris Insights.
 package uploader
 
 import (
@@ -28,22 +30,29 @@ import (
 	"github.com/stellaris-insights/uploader/api"
 )
 
+// S3Uploader is a struct that describes the uploader used to upload to S3.
 type S3Uploader struct {
-	service api.S3ApiServicer
-	lastUpload time.Time
-	uploadSessionId string
+	service             api.S3ApiServicer
+	uploadSessionID     string
 	uploadSessionSecret string
+	lastUpload          time.Time
 }
 
-func NewS3Uploader(service api.S3ApiServicer, uploadSessionId string, uploadSessionSecret string) S3Uploader {
-	return S3Uploader {
+// NewS3Uploader creates a new instance of S3Uploader.
+func NewS3Uploader(
+	service api.S3ApiServicer,
+	uploadSessionID string,
+	uploadSessionSecret string,
+) S3Uploader {
+	return S3Uploader{
 		service,
-		time.Now(),
-		uploadSessionId,
+		uploadSessionID,
 		uploadSessionSecret,
+		time.Now(),
 	}
 }
 
+// Upload will upload the given file to the Stellaris Insights API.
 func (u S3Uploader) Upload(file string) (bool, error) {
 	if time.Since(u.lastUpload).Minutes() <= 5 {
 		return false, nil
@@ -53,7 +62,7 @@ func (u S3Uploader) Upload(file string) (bool, error) {
 
 	fmt.Printf("Uploading file: %#v\n", file)
 
-	url, err := u.service.GetSignedUploadSaveGameURL(u.uploadSessionId, u.uploadSessionSecret)
+	url, err := u.service.GetSignedUploadSaveGameURL(u.uploadSessionID, u.uploadSessionSecret)
 
 	if err != nil {
 		return false, err

@@ -18,12 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Package cmd contains all of the commands available to the stellaris-insights binary.
 package cmd
 
 import (
 	"fmt"
-	"os"
 	"net/http"
+	"os"
 	"path"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -67,7 +68,7 @@ var rootCmd = &cobra.Command{
 
 		viper.Set("userdata", userdataDir)
 
-		if _, err := os.Stat(path.Join(userdataDir, "save games")); err != nil {
+		if _, err = os.Stat(path.Join(userdataDir, "save games")); err != nil {
 			fmt.Println("Can not find or load save games folder in specified folder")
 			fmt.Println(err)
 			os.Exit(1)
@@ -85,13 +86,13 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		uploadSessionId := ""
+		uploadSessionID := ""
 		uploadSessionSecret := ""
 
 		if isContinuation {
 			err = survey.AskOne(&survey.Input{
 				Message: "Upload Session Id",
-			}, &uploadSessionId, survey.Required)
+			}, &uploadSessionID, survey.Required)
 
 			if err != nil {
 				fmt.Println("Failed to ask question")
@@ -113,7 +114,7 @@ var rootCmd = &cobra.Command{
 		fmt.Println("****************************************************************")
 		fmt.Println("Starting watcher")
 		fmt.Printf("Watching directory: %#v\n", path.Join(userdataDir, "save games"))
-		fmt.Printf("Upload Session Id: %#v\n", uploadSessionId)
+		fmt.Printf("Upload Session Id: %#v\n", uploadSessionID)
 		fmt.Printf("Upload Session Secret: %#v\n", uploadSessionSecret)
 		fmt.Println("****************************************************************")
 
@@ -121,7 +122,7 @@ var rootCmd = &cobra.Command{
 			uploader.NewFSNotifyWrapper(),
 			uploader.NewS3Uploader(
 				api.NewS3ApiService(&http.Client{}, "https://api.stellarisinsights.com/"),
-				uploadSessionId,
+				uploadSessionID,
 				uploadSessionSecret,
 			),
 		)

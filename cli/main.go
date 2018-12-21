@@ -18,6 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Program stellaris-insights is a tool to run on your command line
+// that will watch your Stellaris save games directory and upload
+// your save games as they change.
 package main
 
 import "github.com/stellaris-insights/uploader/cli/cmd"

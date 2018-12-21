@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Package uploader is used to handle save game processing
+// and upload them to Stellaris Insights.
 package uploader
 
 import (
@@ -29,18 +31,22 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// SaveGameWatcher is a struct that describes the file system watcher
+// for Stellaris Insights.
 type SaveGameWatcher struct {
-	watcher FSNotifier
+	watcher  FSNotifier
 	uploader Uploader
 }
 
+// NewSaveGameWatcher creates a new instance of SaveGameWatcher.
 func NewSaveGameWatcher(fsn FSNotifier, u Uploader) SaveGameWatcher {
-	return SaveGameWatcher {
+	return SaveGameWatcher{
 		fsn,
 		u,
 	}
 }
 
+// Start watching the given directory for save games.
 func (w SaveGameWatcher) Start(userdataDir string) {
 	var err error
 
@@ -48,23 +54,16 @@ func (w SaveGameWatcher) Start(userdataDir string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	defer w.watcher.Close()
+	defer func() {
+		err = w.watcher.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 
 	done := make(chan bool)
 
-	go func() {
-		for {
-			select {
-			// watch for events
-			case event := <-w.watcher.Events():
-				w.processEvent(event)
-
-			// watch for errors
-			case err := <-w.watcher.Errors():
-				fmt.Println("ERROR: ", err)
-			}
-		}
-	}()
+	go w.processFSNotifications()
 
 	// fsnotify doesn't support recrusive folder watching yet...
 	// https://github.com/fsnotify/fsnotify/issues/18
@@ -99,6 +98,20 @@ func (w SaveGameWatcher) Start(userdataDir string) {
 	}
 
 	<-done
+}
+
+func (w SaveGameWatcher) processFSNotifications() {
+	for {
+		select {
+		// watch for events
+		case event := <-w.watcher.Events():
+			w.processEvent(event)
+
+		// watch for errors
+		case err := <-w.watcher.Errors():
+			fmt.Println("ERROR: ", err)
+		}
+	}
 }
 
 func (w SaveGameWatcher) processEvent(event fsnotify.Event) {

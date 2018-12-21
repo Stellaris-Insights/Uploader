@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Package uploader is used to handle save game processing
+// and upload them to Stellaris Insights.
 package uploader
 
 import (
@@ -27,6 +29,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// FSNotifier is an interface used for file system watchers.
 type FSNotifier interface {
 	Close() error
 	Add(string) error
@@ -36,10 +39,14 @@ type FSNotifier interface {
 	Errors() chan error
 }
 
+// FSNotify is a struct that is used to wrap the fsnotify libraries Watcher.
+// This is primarily to abstract away the use for testing, but needed to
+// make the channels functions.
 type FSNotify struct {
 	watcher *fsnotify.Watcher
 }
 
+// NewFSNotifyWrapper creates a new instance of FSNotify.
 func NewFSNotifyWrapper() FSNotify {
 	watcher, err := fsnotify.NewWatcher()
 
@@ -48,27 +55,32 @@ func NewFSNotifyWrapper() FSNotify {
 		os.Exit(1)
 	}
 
-	return FSNotify {
+	return FSNotify{
 		watcher: watcher,
 	}
 }
 
+// Close the current fsnotify.Watcher.
 func (fsn FSNotify) Close() error {
-	return fsn.watcher.Close();
+	return fsn.watcher.Close()
 }
 
+// Add a new path to watch to fsnotify.Watcher.
 func (fsn FSNotify) Add(path string) error {
-	return fsn.watcher.Add(path);
+	return fsn.watcher.Add(path)
 }
 
+// Remove a path that is being watched by fsnotify.Watcher.
 func (fsn FSNotify) Remove(path string) error {
-	return fsn.watcher.Remove(path);
+	return fsn.watcher.Remove(path)
 }
 
+// Events contains the channel listening for file system changes.
 func (fsn FSNotify) Events() chan fsnotify.Event {
-	return fsn.watcher.Events;
+	return fsn.watcher.Events
 }
 
+// Errors contains the channel listening for errors.
 func (fsn FSNotify) Errors() chan error {
-	return fsn.watcher.Errors;
+	return fsn.watcher.Errors
 }
